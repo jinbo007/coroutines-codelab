@@ -45,57 +45,31 @@ class TitleRepository(val network: MainNetwork, val titleDao: TitleDao) {
     val title: LiveData<String?> = titleDao.titleLiveData.map { it?.title }
 
 
-    // TODO: Add coroutines-based `fun refreshTitle` here
-
     /**
-     * Refresh the current title and save the results to the offline cache.
-     *
-     * This method does not return the new title. Use [TitleRepository.title] to observe
-     * the current tile.
-     */
-    fun refreshTitleWithCallbacks(titleRefreshCallback: TitleRefreshCallback) {
-        // This request will be run on a background thread by retrofit
-
-        BACKGROUND.submit {
-            try {
-                // Make network request using a blocking call
-                val result = network.fetchNextTitle().execute()
-                if (result.isSuccessful) {
-                    // Save it to database
-                    titleDao.insertTitle(Title(result.body()!!))
-                    // Inform the caller the refresh is completed
-                    titleRefreshCallback.onCompleted()
-                } else {
-                    // If it's not successful, inform the callback of the error
-                    titleRefreshCallback.onError(
-                            TitleRefreshError("Unable to refresh title", null))
-                }
-            } catch (cause: Throwable) {
-                // If anything throws an exception, inform the caller
-                titleRefreshCallback.onError(
-                        TitleRefreshError("Unable to refresh title", cause))
-            }
-        }
-    }
-
-    /**
-     * 用携程改造后的函数
+     * 用协程改造后的函数
      */
     suspend fun refreshTitle() {
-        delay(1500)
-        withContext(Dispatchers.IO) {
-            val result = try {
-                network.fetchNextTitle().execute()
-            } catch (cause: Throwable) {
-                throw TitleRefreshError("uable to refeshTitle", null)
-            }
-            if (result.isSuccessful) {
-                titleDao.insertTitle((Title(result.body()!!)))
-            } else {
-                throw TitleRefreshError("uable to freshTitle", null)
-            }
+//        delay(1500)
+//        withContext(Dispatchers.IO) {
+//            val result = try {
+//                network.fetchNextTitle().execute()
+//            } catch (cause: Throwable) {
+//                throw TitleRefreshError("uable to refeshTitle", null)
+//            }
+//            if (result.isSuccessful) {
+//                titleDao.insertTitle((Title(result.body()!!)))
+//            } else {
+//                throw TitleRefreshError("uable to freshTitle", null)
+//            }
+//
+//        }
 
-
+        //Room 和 Network 改造后的协程
+        try {
+            val result = network.fetchNextTitle()
+            titleDao.insertTitle(Title(result))
+        } catch (cause: Throwable) {
+            throw TitleRefreshError("uable to freshTitle", null)
         }
 
 
