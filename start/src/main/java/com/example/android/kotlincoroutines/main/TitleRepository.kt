@@ -22,6 +22,7 @@ import com.example.android.kotlincoroutines.util.BACKGROUND
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 /**
  * TitleRepository provides an interface to fetch a title or request a new one be generated.
@@ -66,10 +67,12 @@ class TitleRepository(val network: MainNetwork, val titleDao: TitleDao) {
 
         //Room 和 Network 改造后的协程
         try {
-            val result = network.fetchNextTitle()
+            val result = withTimeout(5_000) {
+                network.fetchNextTitle()
+            }
             titleDao.insertTitle(Title(result))
         } catch (cause: Throwable) {
-            throw TitleRefreshError("uable to freshTitle", null)
+            throw TitleRefreshError("uable to freshTitle", cause)
         }
 
 
