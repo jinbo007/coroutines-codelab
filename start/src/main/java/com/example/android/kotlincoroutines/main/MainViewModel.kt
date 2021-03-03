@@ -22,6 +22,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.android.kotlincoroutines.util.BACKGROUND
 import com.example.android.kotlincoroutines.util.singleArgViewModelFactory
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -122,19 +123,9 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
      * Refresh the title, showing a loading spinner while it refreshes and errors via snackbar.
      */
     fun refreshTitle() {
-        viewModelScope.launch {
-            try {
-                _spinner.value = true
-                repository.refreshTitle()
-            } catch (error: TitleRefreshError) {
-                _snackBar.value = error.message
-            } finally {
-                _spinner.value = false
-            }
-        }
 
 
-//改造前 用callback实现代码
+//改造前 用callback实现代码  方法1
 //        repository.refreshTitleWithCallbacks(object : TitleRefreshCallback {
 //            override fun onCompleted() {
 //                _spinner.postValue(false)
@@ -145,5 +136,37 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
 //                _spinner.postValue(false)
 //            }
 //        })
+
+        //协程改造后写法
+        //        viewModelScope.launch {
+//            try {
+//                _spinner.value = true
+//                repository.refreshTitle()
+//            } catch (error: TitleRefreshError) {
+//                _snackBar.value = error.message
+//            } finally {
+//                _spinner.value = false
+//            }
+//        }
+
+
+        //高阶lambda
+        launchDataLoad { repository.refreshTitle() }
+    }
+
+    /**
+     * 协程高阶特性
+     */
+    private fun launchDataLoad(block: suspend () -> Unit): Job {
+        return viewModelScope.launch {
+            try {
+                _spinner.value = true
+                block()
+            } catch (error: TitleRefreshError) {
+                _snackBar.value = error.message
+            }
+            _spinner.value = false
+        }
+
     }
 }
